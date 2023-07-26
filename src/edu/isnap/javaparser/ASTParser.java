@@ -37,22 +37,29 @@ public class ASTParser {
 		System.out.println("\n");
 
 
-
-		ASTNode and = node.search(new ASTNode.BackbonePredicate("IfStmt", "BinaryExpr", "Operator"));
-		if (and.value == "AND") {
+		// Find an IfStmt with a BinaryExrp as a child
+		ASTNode and = node.search(new ASTNode.BackbonePredicate("IfStmt", "BinaryExpr"));
+		// If it exists and it's an AND operator...
+		if (and != null && and.value == "AND") {
 			System.out.println("Found an if with an AND condition!");
 			System.out.println(and.parent);
 			System.out.println("\n");
 
-			ASTNode expr1 = and.getParent().children.get(1);
-			ASTNode expr2 = and.getParent().children.get(2);
+			// Get the children of the AND, the two operands
+			ASTNode expr1 = and.children.get(0);
+			ASTNode expr2 = and.children.get(1);
 
+			// Then check if there are any standalone if statements with those expressions
 			List<ASTNode> ifs = node.searchAll(new ASTNode.TypePredicate("IfStmt"));
 
 			ASTNode if1 = null, if2 = null;
 
 			for (ASTNode ifStmt : ifs) {
+				// Get the condition of the if, which should be its first child
 				ASTNode condition = ifStmt.children.get(0);
+
+				// Check if the condition is the same as either operand of the AND
+				// isEquivalent checks if the types, values, and children are equivalent
 				if (condition.isEquivalent(expr1)) {
 					if1 = ifStmt;
 					System.out.println("Found first expression in a standalone if:");
@@ -66,8 +73,10 @@ public class ASTParser {
 					System.out.println("\n");
 				}
 
+				// If we found both, see if one is nested inside of the other.
 				if (if1 != null && if2 != null) {
 					if (if2.allChildren().contains(if1) || if1.allChildren().contains(if2)) {
+						// If, so the refactoring is similar and likely good
 						System.out.println("The standalone ifs are nested correctly!");
 					} else {
 						System.out.println("Ifs are disjoint, probably not nested correctly");
@@ -83,6 +92,7 @@ public class ASTParser {
     	if (node == null) return null;
     	SimpleName name = null;
     	for (Node n : node.getChildNodes()) {
+            // If there's one SimpleName, use that; otherwise, null
     		if (n instanceof SimpleName) {
     			if (name == null) {
     				name = (SimpleName) n;
@@ -96,6 +106,8 @@ public class ASTParser {
     }
 
 	static boolean ignore(Node node) {
+		// Don't put these nodes into the AST, since they should be
+		// interpreted as values, or just ignored.
     	return
     			(node instanceof SimpleName &&
 					getSimpleName(node.getParentNode().orElse(null)) == node) ||
@@ -118,18 +130,6 @@ public class ASTParser {
     	}
     	return "";
 	}
-
-//	public static String toJSON(String source) {
-//		CompilationUnit cu = JavaParser.parse(source);
-//		ParsedNode parsed = parseAST(cu);
-//		ObjectMapper mapper = new ObjectMapper();
-//		try {
-//			return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
-//		} catch (JsonProcessingException e) {
-//			e.printStackTrace();
-//			return null;
-//		}
-//	}
 
 	public static ASTNode parseAST(Node node) {
 		String[] methodsToIgnore = {"isVarArgs", "getType", "isInterface", "getIdentifier", "getValue"};
@@ -183,7 +183,10 @@ public class ASTParser {
 						}
 						else if(node instanceof BinaryExpr || node instanceof UnaryExpr || node instanceof AssignExpr) {
 							if(methodName.equals("getOperator")) {
-								createChild = true;
+								// Rather than adding the operator type as a child, instead
+								// add it as the value of the binary expression
+								res.value = property.getValue(node).toString();
+								continue;
 							}
 						}
 						if(createChild) {

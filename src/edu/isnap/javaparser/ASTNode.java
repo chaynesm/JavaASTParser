@@ -9,7 +9,7 @@ import edu.isnap.javaparser.PrettyPrint.Params;
 
 public class ASTNode {
 	public final String type;
-	public final String value;
+	public String value;
 	public final ArrayList<ASTNode> children;
 	public final int[] sourceStart;
 	public final int[] sourceEnd;
