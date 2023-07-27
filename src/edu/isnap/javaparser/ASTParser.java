@@ -27,7 +27,7 @@ import com.github.javaparser.metamodel.PropertyMetaModel;
 
 public class ASTParser {
 
-	private static final String FILE_PATH = "./src/Test.java";
+	private static final String FILE_PATH = "./snapshots/user1304_2019-10-14 08.07.04.608371.java";
 
 	public static void main(String[] args) throws FileNotFoundException {
 		CompilationUnit cu = JavaParser.parse(new FileInputStream(FILE_PATH));

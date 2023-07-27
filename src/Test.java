@@ -1,18 +1,18 @@
 
 public class Test {
-	public void test(String[] args) {
-		int x = 5;
-		int y = 3 + 2;
-		if (x == 3 && y == 2) {
 
-		} else {
-
-		}
-
-		if (x == 3) {
-			if (y == 2) {
-
+    public static int sumValues(int [] values, boolean positivesOnly) {
+		int sum = 0;
+		for (int i : values) {
+			if (positivesOnly == true) {
+				if (i > 0) {
+					sum += i;
+				}
+			} else {
+				sum += i;
 			}
 		}
-	}
+		return sum;
+    }
+
 }
