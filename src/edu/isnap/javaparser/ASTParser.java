@@ -1,9 +1,11 @@
 package edu.isnap.javaparser;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -27,16 +29,47 @@ import com.github.javaparser.metamodel.PropertyMetaModel;
 
 public class ASTParser {
 
-	private static final String FILE_PATH = "./snapshots/user1304_2019-10-14 08.07.04.608371.java";
-
 	public static void main(String[] args) throws FileNotFoundException {
-		CompilationUnit cu = JavaParser.parse(new FileInputStream(FILE_PATH));
+
+		File dir = new File("./snapshots/");
+		File[] directoryListing = dir.listFiles();
+		if (directoryListing != null) {
+			HashMap<String, List<ASTNode>> nodesPerUser = new HashMap<>();
+			for (File child : directoryListing) {
+				String[] fileName = child.getName().replace(".java", "").split("_");
+				
+				String user = fileName[0];
+				ASTNode node = openSnapshot(child.getPath());
+
+				if (!nodesPerUser.containsKey(user)) {
+					ArrayList<ASTNode> nodes = new ArrayList<>();
+					nodesPerUser.put(user, nodes);
+				}
+				nodesPerUser.get(user).add(node);
+			}
+		}
+
+	}
+
+	public static ASTNode openSnapshot(String fileName) throws FileNotFoundException {
+		System.out.println("Generating AST for " + fileName);
+		CompilationUnit cu = null;
+		try {
+			cu = JavaParser.parse(new FileInputStream(fileName));
+		} catch (Exception e) {
+			System.out.println("Code snapshot could not be compiled!");
+			return null;
+		}
 		ASTNode node = parseAST(cu);
-		System.out.println("Whole code AST");
-		System.out.println(node);
-		System.out.println("\n");
 
+		// System.out.println("Whole code AST");
+		// System.out.println(node);
+		// System.out.println("\n");
+		
+		return node;
+	}
 
+	public static void process(ASTNode node) {
 		// Find an IfStmt with a BinaryExrp as a child
 		ASTNode and = node.search(new ASTNode.BackbonePredicate("IfStmt", "BinaryExpr"));
 		// If it exists and it's an AND operator...
@@ -44,11 +77,11 @@ public class ASTParser {
 			System.out.println("Found an if with an AND condition!");
 			System.out.println(and.parent);
 			System.out.println("\n");
-
+			
 			// Get the children of the AND, the two operands
 			ASTNode expr1 = and.children.get(0);
 			ASTNode expr2 = and.children.get(1);
-
+			
 			// Then check if there are any standalone if statements with those expressions
 			List<ASTNode> ifs = node.searchAll(new ASTNode.TypePredicate("IfStmt"));
 
@@ -57,7 +90,7 @@ public class ASTParser {
 			for (ASTNode ifStmt : ifs) {
 				// Get the condition of the if, which should be its first child
 				ASTNode condition = ifStmt.children.get(0);
-
+				
 				// Check if the condition is the same as either operand of the AND
 				// isEquivalent checks if the types, values, and children are equivalent
 				if (condition.isEquivalent(expr1)) {
@@ -83,9 +116,7 @@ public class ASTParser {
 					}
 				}
 			}
-
 		}
-
 	}
 
 	public static SimpleName getSimpleName(Node node) {
